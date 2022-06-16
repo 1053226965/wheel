@@ -5,7 +5,7 @@
 template<typename T>
 class ringbuffer
 {
-  constexpr static int heightOneBit(int v) {
+  constexpr static int cto2n(int v) {
     v -= 1;
     v |= v >> 1;
     v |= v >> 2;
@@ -17,14 +17,14 @@ class ringbuffer
   }
 
 public:
-  ringbuffer(int s) { _buf.resize(heightOneBit(s)); }
+  ringbuffer(int s) { _buf.resize(cto2n(s)); }
 
   bool put(T v) {
     size_t p = _next_can_put.load(std::memory_order_relaxed);
     if (p - _next_can_take.load(std::memory_order_relaxed) == _buf.size()) {
       return false;
     }
-    _buf[calcSlotIndex(p)] = v;
+    _buf[calc_slot_index(p)] = v;
     _next_can_put.store(p + 1, std::memory_order_release);
     return true;
   }
@@ -35,7 +35,7 @@ public:
     if (_next_can_put.load(std::memory_order_acquire) <= p) {
       return false;
     }
-    int v = _buf[calcSlotIndex(p)];
+    int v = _buf[calc_slot_index(p)];
     if (!_next_can_take.compare_exchange_strong(p, p + 1, std::memory_order_relaxed)) {
       return false;
     }
@@ -48,7 +48,7 @@ public:
   }
 
 private:
-  size_t calcSlotIndex(size_t v) {
+  size_t calc_slot_index(size_t v) {
     return v & (_buf.size() - 1);
   }
 
